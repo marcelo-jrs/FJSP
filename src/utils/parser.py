@@ -31,7 +31,7 @@ def parse(path):
                 processingTime = currentLineValues[j]
                 j = j+1
 
-                operation.append({'machine': machine, 'processingTime': processingTime})
+                operation.append({'job': i + 1,'machine': machine, 'processingTime': processingTime})
 
             operations.append(operation)
 
