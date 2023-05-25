@@ -5,53 +5,75 @@ from utils import parser
 dataset = parser.parse(r'Data\Kacem\Kacem1_4x5.fjs')
 jobsNb = dataset.get('JobsNb')
 machinesNb = dataset.get('machinesNb')
+opTotal = dataset.get('opTotal')
+op_machines = dataset.get('op_machines')
 jobs = dataset.get('jobs')
 
 
+def sorteio(inicio, fim):
+    result = random.randint(inicio, fim)
+    return result
 
-def generate_chromossome(machinesNb, jobs):
-    chromossome = []
-    jobNb = 0
-    proc_time = 0
-    x = 0
+def generate_individual(opTotal, op_machines, jobs):
+    individual = [0] * opTotal
+    lastIndex = 0
+    x = 1
+ 
+    for i in range(len(jobs)):
+        opJob = len(jobs[i])
+        for j in range(len(jobs[i])):
+            currIndex = random.randint(0, opTotal - 1)
+            currOperation = jobs[i][j][random.randint(0, op_machines - 1)]
+            if individual[currIndex] == 0:
+                if currOperation != individual[currIndex]:
+                    if currIndex + opJob - currOperation.get('opNb') < opTotal:
+                        if lastIndex < currIndex | (lastIndex == 0 & currIndex == 0):
+                            for k in range(currIndex, 11):
+                                freeIndex = 0
+                                if individual[k] == 0:
+                                    freeIndex += 1
+                            if freeIndex == opJob - currOperation.get('opNb'):
+                                    individual[currIndex] = currOperation
+                                    lastIndex = currIndex
+            else:
+                while(x == 1):
+                    currIndex2 = random.randint(0, opTotal - 1)
+                    if individual[currIndex2] == 0:
+                        if currOperation != individual[currIndex2]:
+                            if currIndex2 + opJob - currOperation.get('opNb') < opTotal:
+                                if lastIndex < currIndex2 | (lastIndex == 0 & currIndex2 == 0):
+                                    individual[currIndex2] = currOperation
+                                    lastIndex = currIndex2
+                                    currIndex = currIndex2
+                                    x = 0
+        lastIndex = 0
 
-    random.shuffle(jobs)
+    return individual
 
-    for job in jobs:
-        for operation in job:
-            counter = len(operation)
-            machine = operation[random.randint(0, counter - 1)].get('machine', random.randint(1, machinesNb))
-            for i in operation:
-                machine_proc = i.get('machine') 
-                if machine_proc == machine:
-                    proc_time = i.get('processingTime')
-                    jobNb = i.get('job')
-                    chromossome.append({'job': jobNb ,'machine': machine, 'processingTime': proc_time})            
-        
-    return chromossome
+generate_individual(opTotal, op_machines, jobs)
+
 
 def generate_population(max_population, machinesNb, jobs):
     population = []
 
     for i in range(max_population):
-        population.append(generate_chromossome(machinesNb, jobs))
+        population.append(generate_individual(machinesNb, jobs))
     return population
 
 def keyJob(e):
     return e['job']
 
-
-def fitnes_function(chromossome):
+def fitnes_function(individual):
     # Initialize variables
     job_completion_times = {}
     machine_completion_times = {}
     total_completion_time = 0
 
-    # Iterate over each gene in the chromosome
-    for gene in chromossome:
-        job = gene['job']
-        machine = gene['machine']
-        processing_time = gene['processingTime']
+    # Iterate over each chromosome in the individual
+    for chromosome in individual:
+        job = chromosome['job']
+        machine = chromosome['machine']
+        processing_time = chromosome['processingTime']
 
         # Calculate the start time for the current operation
         start_time = max(job_completion_times.get(job, 0), machine_completion_times.get(machine, 0))
@@ -68,6 +90,7 @@ def fitnes_function(chromossome):
 
     # Return the fitness value (inverse of the total completion time)
     fitness = 1 / total_completion_time
+    individual.append({'fitness': fitness})
     return fitness
 
 def crossover(parent1, parent2):
@@ -86,11 +109,10 @@ def tournament_selection(population, tournament_size):
 
     # Calculate fitness for each individual
     for individual in tournament:
-        fitness = fitnes_function(individual)
-        individual.append({'fitness': fitness})
+        fitnes_function(individual)
         
     # Sort the tournament individuals by their fitness values
-    tournament.sort(key=lambda individual: individual['fitness'], reverse=True)
+    tournament.sort(key=lambda individual: individual[len(individual) - 1]['fitness'], reverse=True)
 
     # Select the top two individuals as parents
     parent1 = tournament[0]
@@ -99,12 +121,17 @@ def tournament_selection(population, tournament_size):
     return parent1, parent2
 
 
-pop = generate_population(10, machinesNb, jobs)
+def swap_mutation(individual):
+    # Randomly select two positions in the chromosome
+    pos1 = random.randint(0, len(individual) - 1)
+    pos2 = random.randint(0, len(individual) - 1)
+    
+    # Swap the values at the selected positions
+    individual[pos1], individual[pos2] = individual[pos2], individual[pos1]
+    
+    return individual
 
-for chromossome in pop:
-    fitnes_function(chromossome)
 
-print(tournament_selection(pop,5))
 
 
 
