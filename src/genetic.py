@@ -10,42 +10,40 @@ op_machines = dataset.get('op_machines')
 jobs = dataset.get('jobs')
 
 
-def sorteio(inicio, fim):
-    result = random.randint(inicio, fim)
-    return result
+def checkIfFits(index, individual, opJob, opNb):
+    spotOpen = 0
+    for i in range(index, len(individual)):
+        if individual[i] == 0:
+           spotOpen += 1
+    if spotOpen > opJob - opNb:
+        return True
+    else:
+        return False
 
 def generate_individual(opTotal, op_machines, jobs):
     individual = [0] * opTotal
     lastIndex = 0
+    occupiedIndex = []
     x = 1
  
     for i in range(len(jobs)):
         opJob = len(jobs[i])
+        x = 1
         for j in range(len(jobs[i])):
-            currIndex = random.randint(0, opTotal - 1)
-            currOperation = jobs[i][j][random.randint(0, op_machines - 1)]
-            if individual[currIndex] == 0:
-                if currOperation != individual[currIndex]:
-                    if currIndex + opJob - currOperation.get('opNb') < opTotal:
-                        if lastIndex < currIndex | (lastIndex == 0 & currIndex == 0):
-                            for k in range(currIndex, 11):
-                                freeIndex = 0
-                                if individual[k] == 0:
-                                    freeIndex += 1
-                            if freeIndex == opJob - currOperation.get('opNb'):
+            x = 1
+            while(x == 1):
+                currIndex = random.randint(0, opTotal - 1)
+                currOperation = jobs[i][j][random.randint(0, op_machines - 1)]
+                if individual[currIndex] == 0:
+                    if currOperation != individual[currIndex]:
+                        if currIndex + opJob - currOperation.get('opNb') < opTotal:
+                            if lastIndex < currIndex | (lastIndex == 0 & currIndex == 0):
+                                if checkIfFits(currIndex, individual, opJob, currOperation.get('opNb')) == True:
                                     individual[currIndex] = currOperation
                                     lastIndex = currIndex
-            else:
-                while(x == 1):
-                    currIndex2 = random.randint(0, opTotal - 1)
-                    if individual[currIndex2] == 0:
-                        if currOperation != individual[currIndex2]:
-                            if currIndex2 + opJob - currOperation.get('opNb') < opTotal:
-                                if lastIndex < currIndex2 | (lastIndex == 0 & currIndex2 == 0):
-                                    individual[currIndex2] = currOperation
-                                    lastIndex = currIndex2
-                                    currIndex = currIndex2
+                                    occupiedIndex.append(lastIndex)
                                     x = 0
+
         lastIndex = 0
 
     return individual
