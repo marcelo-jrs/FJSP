@@ -145,6 +145,12 @@ def swap_mutation(individual):
     
     return individual
 
+def replace():
+
+    #crossover até faltarem 2 na população
+    #guarda os 2 melhores da antiga gen e troca os antigos pelos novos
+    #mutation em todos
+    return 
 
 pop  = generate_population(10, opTotal, opMachines, jobs)
 parents = tournament_selection(pop, 5)
