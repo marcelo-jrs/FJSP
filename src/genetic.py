@@ -6,7 +6,7 @@ dataset = parser.parse(r'Data\Kacem\Kacem1_4x5.fjs')
 jobsNb = dataset.get('JobsNb')
 machinesNb = dataset.get('machinesNb')
 opTotal = dataset.get('opTotal')
-op_machines = dataset.get('op_machines')
+opMachines = dataset.get('opMachines')
 jobs = dataset.get('jobs')
 
 
@@ -20,7 +20,7 @@ def checkIfFits(index, individual, opJob, opNb):
     else:
         return False
 
-def generate_individual(opTotal, op_machines, jobs):
+def generate_individual(opTotal, opMachines, jobs):
     individual = [0] * opTotal
     lastIndex = 0
     occupiedIndex = []
@@ -33,7 +33,7 @@ def generate_individual(opTotal, op_machines, jobs):
             x = 1
             while(x == 1):
                 currIndex = random.randint(0, opTotal - 1)
-                currOperation = jobs[i][j][random.randint(0, op_machines - 1)]
+                currOperation = jobs[i][j][random.randint(0, opMachines - 1)]
                 if individual[currIndex] == 0:
                     if currOperation != individual[currIndex]:
                         if currIndex + opJob - currOperation.get('opNb') < opTotal:
@@ -43,23 +43,16 @@ def generate_individual(opTotal, op_machines, jobs):
                                     lastIndex = currIndex
                                     occupiedIndex.append(lastIndex)
                                     x = 0
-
         lastIndex = 0
 
     return individual
 
-generate_individual(opTotal, op_machines, jobs)
-
-
-def generate_population(max_population, machinesNb, jobs):
+def generate_population(max_population, opTotal, opMachines, jobs):
     population = []
 
     for i in range(max_population):
-        population.append(generate_individual(machinesNb, jobs))
+        population.append(generate_individual(opTotal, opMachines, jobs))
     return population
-
-def keyJob(e):
-    return e['job']
 
 def fitnes_function(individual):
     # Initialize variables
@@ -88,36 +81,59 @@ def fitnes_function(individual):
 
     # Return the fitness value (inverse of the total completion time)
     fitness = 1 / total_completion_time
-    individual.append({'fitness': fitness})
     return fitness
 
-def crossover(parent1, parent2):
-    # Select a random crossover point
-    crossover_point = random.randint(1, min(len(parent1), len(parent2)) - 1)
+def order_crossover(parent1, parent2):
+    # Select two random crossover points
+    point1 = random.randint(0, len(parent1) - 2)
+    point2 = random.randint(point1 + 1, len(parent1))
+    
+    # Create an empty child with the same length as the parents
+    child = [None] * len(parent1)
+    
+    # Copy the selected segment from parent1 to the child
+    child[point1:point2] = parent1[point1:point2]
+    
+    # Fill the remaining positions in the child with the values from parent2
+    index = point2
+    for value in parent2[point2:] + parent2[:point2]:
+        if value not in child:
+            child[index] = value
+            index = (index + 1) % len(parent1)
+    
+    return child
 
-    # Perform the crossover
-    child1 = parent1[:crossover_point] + parent2[crossover_point:]
-    child2 = parent2[:crossover_point] + parent1[crossover_point:]
+def check_constraints(child):
+    job_operations = {}  # Track the last operation number for each job
+    for operation in child:
+        job = operation['job']
+        op_nb = operation['opNb']
+        if job not in job_operations:
+            job_operations[job] = 0  # Initialize last operation number for the job
+        if op_nb <= job_operations[job]:
+            return False  # Precedence constraint violated
+        job_operations[job] = op_nb  # Update the last operation number for the job
+    return True  # All precedence constraints satisfied
 
-    return child1, child2
+def keyFit():
+    return 'fitScore'
 
 def tournament_selection(population, tournament_size):
+    fitnessScore = []
+
     # Randomly select individuals for the tournament
     tournament = random.sample(population, tournament_size)
 
     # Calculate fitness for each individual
     for individual in tournament:
-        fitnes_function(individual)
-        
-    # Sort the tournament individuals by their fitness values
-    tournament.sort(key=lambda individual: individual[len(individual) - 1]['fitness'], reverse=True)
+        fitnessScore.append({'fitScore': fitnes_function(individual), 'individual': individual})
+    fitnessSorted = sorted(fitnessScore, key=lambda x: x['fitScore'], reverse=True)
 
     # Select the top two individuals as parents
-    parent1 = tournament[0]
-    parent2 = tournament[1]
+    parent1 = fitnessSorted[0].get('individual')
+    parent2 = fitnessSorted[1].get('individual')
 
     return parent1, parent2
-
 
 def swap_mutation(individual):
     # Randomly select two positions in the chromosome
@@ -130,7 +146,11 @@ def swap_mutation(individual):
     return individual
 
 
-
+pop  = generate_population(10, opTotal, opMachines, jobs)
+parents = tournament_selection(pop, 5)
+child = order_crossover(parents[0], parents[1])
+if check_constraints(child) == True:
+    swap_mutation(child)
 
 
 

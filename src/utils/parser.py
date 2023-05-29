@@ -9,7 +9,7 @@ def parse(path):
     opTotal = 0
     jobsNb = firstLineValues[0]
     machinesNb = firstLineValues[1]
-    op_machines = firstLineValues[2]
+    opMachines = firstLineValues[2]
 
     jobs = []
 
@@ -38,4 +38,4 @@ def parse(path):
 
     file.close()
 
-    return {'machinesNb': machinesNb, 'JobsNb': jobsNb, 'opTotal': opTotal, 'op_machines': op_machines, 'jobs': jobs }
+    return {'machinesNb': machinesNb, 'JobsNb': jobsNb, 'opTotal': opTotal, 'opMachines': opMachines, 'jobs': jobs }
