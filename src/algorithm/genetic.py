@@ -11,8 +11,8 @@ def checkIfFits(index, individual, opJob, opNb):
     else:
         return False
 
-def generate_individual(opTotal, opMachines, jobs):
-    individual = [0] * opTotal
+def generate_individual(op_total, op_machines, jobs):
+    individual = [0] * op_total
     lastIndex = 0
     occupiedIndex = []
     x = 1
@@ -23,11 +23,14 @@ def generate_individual(opTotal, opMachines, jobs):
         for j in range(len(jobs[i])):
             x = 1
             while(x == 1):
-                currIndex = random.randint(0, opTotal - 1)
-                currOperation = jobs[i][j][random.randint(0, opMachines - 1)]
+                currIndex = random.randint(0, op_total - 1)
+                if op_machines > 2:
+                    currOperation = jobs[i][j][random.randint(0, op_machines - 1)]
+                elif op_machines == 2:
+                    currOperation = jobs[i][j][random.randint(0, op_machines)]
                 if individual[currIndex] == 0:
                     if currOperation != individual[currIndex]:
-                        if currIndex + opJob - currOperation.get('opNb') < opTotal:
+                        if currIndex + opJob - currOperation.get('opNb') < op_total:
                             if lastIndex < currIndex | (lastIndex == 0 & currIndex == 0):
                                 if checkIfFits(currIndex, individual, opJob, currOperation.get('opNb')) == True:
                                     individual[currIndex] = currOperation
@@ -38,11 +41,11 @@ def generate_individual(opTotal, opMachines, jobs):
 
     return individual
 
-def generate_population(max_population, opTotal, opMachines, jobs):
+def generate_population(max_population, op_total, op_machines, jobs):
     population = []
 
     for i in range(max_population):
-        population.append(generate_individual(opTotal, opMachines, jobs))
+        population.append(generate_individual(op_total, op_machines, jobs))
     return population
 
 def fitnes_function(individual):
@@ -110,19 +113,19 @@ def keyFit():
     return 'fitScore'
 
 def tournament_selection(population, tournament_size):
-    fitnessScore = []
+    fitness_score = []
 
     # Randomly select individuals for the tournament
     tournament = random.sample(population, tournament_size)
 
     # Calculate fitness for each individual
     for individual in tournament:
-        fitnessScore.append({'fitScore': fitnes_function(individual), 'individual': individual})
-    fitnessSorted = sorted(fitnessScore, key=lambda x: x['fitScore'], reverse=True)
+        fitness_score.append({'fitScore': fitnes_function(individual), 'individual': individual})
+    fitness_sorted = sorted(fitness_score, key=lambda x: x['fitScore'], reverse=True)
     
     # Select the top two individuals as parents
-    parent1 = fitnessSorted[0].get('individual')
-    parent2 = fitnessSorted[1].get('individual')
+    parent1 = fitness_sorted[0].get('individual')
+    parent2 = fitness_sorted[1].get('individual')
 
     return parent1, parent2
 
@@ -154,17 +157,52 @@ def replace(population, child):
     #crossover até faltarem 2 na população
     #guarda os 2 melhores da antiga gen e troca os antigos pelos novos
     #mutation em todos
-    fitnessScore = []
+    fitness_score = []
 
     #Order the population according to fitness score
     for individual in population:
-        fitnessScore.append({'fitScore': fitnes_function(individual), 'individual': individual})
-    fitnessSorted = sorted(fitnessScore, key=lambda x: x['fitScore'], reverse=True)
+        fitness_score.append({'fitScore': fitnes_function(individual), 'individual': individual})
+    fitness_sorted = sorted(fitness_score, key=lambda x: x['fitScore'], reverse=True)
     
-    index = len(fitnessSorted) - 1
+    index = len(fitness_sorted) - 1
 
     population.pop(index)
     population.insert(index, child)
 
     return population
+
+def genetic_algorithm(max_generation, max_opulation, torunament_size, op_total, op_machines, jobs):
+    population = generate_population(max_opulation, op_total, op_machines, jobs)
+    currSolution = population[0]
+    # Executar o algoritmo genético
+    for generation in range(max_generation):
+        # Avaliar a aptidão de cada indivíduo na população
+        fitness_scores = []
+        for individual in population:
+            fitness = fitnes_function(individual)
+            fitness_scores.append({'fitScore': fitness, 'individual': individual})
+
+        # Selecionar os pais para reprodução
+        parent1, parent2 = tournament_selection(population, torunament_size)
+
+        if fitnes_function(currSolution) < fitnes_function(parent1):
+            currSolution = parent1
+
+        counter = 0
+        while len(population) > counter:
+            # Aplicar crossover
+            child = order_crossover(parent1, parent2)
+
+            # Verificar as restrições do filho gerado
+            if check_constraints(child):
+                # Substituir um indivíduo na população pelo filho gerado
+                population = replace(population, child)
+                counter += 1
+
+        # Aplicar mutação
+
+    # Obter a melhor solução da população final
+    best_solution = max(population, key=lambda x: fitnes_function(x))
+    best_score = fitnes_function(best_solution)
+    return best_solution, best_score
 

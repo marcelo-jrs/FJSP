@@ -7,10 +7,29 @@ def swap_solution(solution):
     pos1 = random.randint(0, len(solution) - 1)
     pos2 = random.randint(0, len(solution) - 1)
     
+    # Check if the positions violate any constraints
+    while not check_constraints(solution, pos1, pos2):
+        pos1 = random.randint(0, len(solution) - 1)
+        pos2 = random.randint(0, len(solution) - 1)
+
     # Swap the values at the selected positions
     solution[pos1], solution[pos2] = solution[pos2], solution[pos1]
     
     return solution
+
+def check_constraints(solution, pos1, pos2):
+    # Retrieve the job and operation numbers at the selected positions
+    job1 = solution[pos1]['job']
+    job2 = solution[pos2]['job']
+    opNb1 = solution[pos1]['opNb']
+    opNb2 = solution[pos2]['opNb']
+
+    # Check if swapping violates the constraints
+    if job1 == job2 or opNb1 != opNb2:
+        return False
+    
+    return True
+
 
 def replace_solution(solution, jobs):
     for i in range(len(solution)):
@@ -28,47 +47,47 @@ def decrease_temperature(initalTemp, alpha, iteration):
     temp = initalTemp * (alpha ** iteration)
     return temp
 
-def evaluate(solution):
-    # Initialize variables
-    job_completion_times = {}
-    machine_completion_times = {}
-    total_completion_time = 0
+def evaluate_makespan(solution):
+    machine_completion_times = [0] * (max(operation['machine'] for operation in solution) + 1)
 
-    # Iterate over each chromosome in the solution
     for operation in solution:
-        job = operation['job']
         machine = operation['machine']
         processing_time = operation['processingTime']
 
-        # Calculate the start time for the current operation
-        start_time = max(job_completion_times.get(job, 0), machine_completion_times.get(machine, 0))
-
-        # Update the completion time for the current operation
+        start_time = machine_completion_times[machine]
         completion_time = start_time + processing_time
 
-        # Update the completion times for the job and machine
-        job_completion_times[job] = completion_time
         machine_completion_times[machine] = completion_time
 
-        # Update the total completion time
-        total_completion_time = max(total_completion_time, completion_time)
+    makespan = max(machine_completion_times)
+    return makespan
 
-    cost = total_completion_time
-    return cost
 
-def accept_solution(currCost, newCost, temperature):
-    acceptance_probability = math.exp((currCost - newCost) / temperature)
-    random_number = random.uniform(0, 1)
-    
-    if random_number < acceptance_probability:
-        return True  # New solution is accepted
+def acceptance_probability(curr_cost, new_cost, temperature):
+    if new_cost < curr_cost:
+        return True  # Aceita solução melhor sem condições
     else:
-        return False  # New solution is rejected
+        delta_cost = new_cost - curr_cost
+        prob = math.exp(-delta_cost / temperature)
+        random_number = random.uniform(0, 1)
+        return random_number < prob
 
+def simulated_annealing(initial_solution, jobs, initial_temp, alpha, max_iterations):
+    current_solution = initial_solution.copy()
+    current_cost = evaluate_makespan(current_solution)
+    current_temp = initial_temp
+    
+    for iteration in range(max_iterations):
+        new_solution = replace_solution(current_solution.copy(), jobs)
+        new_solution = swap_solution(new_solution.copy())
+        new_cost = evaluate_makespan(new_solution)
+        
+        if acceptance_probability(current_cost, new_cost, current_temp):
+            current_solution = new_solution
+            current_cost = new_cost
 
-solution = [{'job': 4, 'machine': 2, 'processingTime': 5, 'opNb': 1}, {'job': 4, 'machine': 4, 'processingTime': 1, 'opNb': 2}, {'job': 2, 'machine': 5, 'processingTime': 8, 'opNb': 1}, {'job': 3, 'machine': 2, 'processingTime': 8, 'opNb': 1}, {'job': 3, 'machine': 4, 'processingTime': 5, 'opNb': 2}, {'job': 3, 'machine': 1, 'processingTime': 2, 'opNb': 3}, {'job': 1, 'machine': 2, 'processingTime': 5, 'opNb': 1}, {'job': 3, 'machine': 1, 'processingTime': 4, 'opNb': 4}, {'job': 2, 'machine': 4, 'processingTime': 8, 'opNb': 2}, {'job': 2, 'machine': 5, 'processingTime': 5, 'opNb': 3}, {'job': 1, 'machine': 4, 'processingTime': 7, 'opNb': 2}, {'job': 1, 'machine': 2, 'processingTime': 5, 'opNb': 3}]
-initalTemp = 100.0
-currTemp = initalTemp
-alpha = 0.95
-iteration = 0
-
+        current_temp = decrease_temperature(initial_temp, alpha, iteration)
+        if current_temp < 0.00:
+            break
+    print(current_cost)
+    return current_solution, current_cost
