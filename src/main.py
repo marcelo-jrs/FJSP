@@ -1,7 +1,7 @@
+import pandas as pd
 from utils import parser
-from algorithm import genetic
-from algorithm import simulated_annealing
-
+from algorithm import genetic as gn
+from algorithm import simulated_annealing as sa
 
 dataset = parser.parse(r'Data\Kacem\Kacem1_4x5.fjs')
 jobsNb = dataset.get('JobsNb')
@@ -10,18 +10,32 @@ opTotal = dataset.get('opTotal')
 opMachines = dataset.get('opMachines')
 jobs = dataset.get('jobs')
 
-maxPopulation = 10
-maxGeneration = 100
-tournamentSize = 5
+def execute(parameters):
+    max_population = parameters.get('max_population')
+    max_generation = parameters.get('max_generation')
+    tournament_size = parameters.get('tournament_size')
+    initial_temp = parameters.get('initial_temp')
+    alpha = parameters.get('alpha')
+    max_iterations = parameters.get('max_iterations')
 
-solution = genetic.genetic_algorithm(maxGeneration, maxPopulation, tournamentSize, opTotal, opMachines, jobs)
+    results_gn = gn.genetic_algorithm(max_generation, max_population, tournament_size, opTotal, opMachines, jobs)
+    solution = results_gn[0]
 
-best_solution = solution[0]
-best_score = simulated_annealing.evaluate_makespan(solution[0])
-print(best_score)
-initial_temp = 100.0
-alpha = 0.95
-max_iterations = 1000
+    results_sa = sa.simulated_annealing(solution, jobs, initial_temp, alpha, max_iterations)
 
+    return results_gn, results_sa
 
-print(simulated_annealing.simulated_annealing(best_solution, jobs,  initial_temp, alpha, max_iterations))
+def create_gantt(result):
+    df = pd.DataFrame(result)
+    # Ordenar o DataFrame pela coluna 'opNb' para criar a sequência correta das tarefas
+    df = df.sort_values('opNb')
+
+    # Calcular as datas de início e fim com base no tempo de processamento (processingTime)
+    df['Início'] = df.groupby('job')['processingTime'].cumsum() - df['processingTime']
+    df['Fim'] = df.groupby('job')['processingTime'].cumsum()
+
+    fig = px.timeline(df, x_start='Início', x_end='Fim', y='job', color='machine', title='Gráfico de Gantt - FJSP')
+    fig.update_layout(yaxis={'title': 'Job'})
+    fig.update_xaxes(title='Tempo')
+    fig.show()
+
