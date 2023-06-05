@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 from utils import parser
+from utils import gantt
 import algorithm.genetic as gn
 import algorithm.simulated_annealing as sa
 
@@ -50,21 +51,6 @@ def execute(parameters):
 
     return results_gn, results_sa
 
-
-def create_gantt(result):
-    df = pd.DataFrame(result)
-    # Ordenar o DataFrame pela coluna 'opNb' para criar a sequência correta das tarefas
-    df = df.sort_values('opNb')
-
-    # Calcular as datas de início e fim com base no tempo de processamento (processingTime)
-    df['Início'] = df.groupby('job')['processingTime'].cumsum() - df['processingTime']
-    df['Fim'] = df.groupby('job')['processingTime'].cumsum()
-
-    fig = px.timeline(df, x_start='Início', x_end='Fim', y='job', color='machine', title='Gráfico de Gantt - FJSP')
-    fig.update_layout(yaxis={'title': 'Job'})
-    fig.update_xaxes(title='Tempo')
-    fig.show()
-
 parameters = user_input_features()
 
 st.subheader('Parâmetros do usuário')
@@ -89,69 +75,9 @@ if clicked:
     sa_score = results[1][1]
 
     st.subheader('Solução gerada:')
-    st.text(sa_solution[0])
+    st.dataframe(sa_solution[0])
 
     st.subheader('Makespan:')
     st.text(sa_solution[1])
 
-    df_result = pd.DataFrame(sa_solution[0])
-
-    # Ordenar o DataFrame pela coluna 'opNb' para criar a sequência correta das tarefas
-    df_result = df_result.sort_values('opNb')
-
-    # Criar uma lista com as cores para cada job
-    job_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
-
-    # Criar uma lista com as máquinas presentes no DataFrame
-    machines = sorted(df_result['machine'].unique())
-
-    # Criar uma lista com as operações de cada máquina
-    machine_operations = []
-    for machine in machines:
-        machine_df = df_result[df_result['machine'] == machine]
-        operations = []
-        start_time = 0
-        for index, row in machine_df.iterrows():
-            operation = {
-                'Task': row['machine'],
-                'Start': start_time,
-                'Finish': start_time + row['processingTime'],
-                'Description': f"Job {row['job']}",
-                'Resource': f"Job {row['job']}",
-                'Color': job_colors[row['job'] - 1]
-            }
-            operations.append(operation)
-            start_time += row['processingTime']
-        machine_operations.append(operations)
-
-        # Configurar o gráfico de Gantt
-        fig = go.Figure()
-
-        for machine, operations in zip(machines, machine_operations):
-            fig.add_trace(go.Bar(
-                y=[machine] * len(operations),
-                x=[operation['Start'] for operation in operations],
-                width=[operation['Finish'] - operation['Start'] for operation in operations],
-                base=[machine] * len(operations),
-                orientation='h',
-                text=[operation['Description'] for operation in operations],
-                hovertemplate='Máquina: %{y}<br>' +
-                            'Job: %{text}<br>' +
-                            'Início: %{x}<br>' +
-                            'Término: %{x + width}<br>',
-                marker=dict(color=[operation['Color'] for operation in operations]),
-                showlegend=False
-            ))
-
-        fig.update_layout(
-            title='Gráfico de Gantt',
-            yaxis=dict(title='Máquinas'),
-            xaxis=dict(title='Tempo'),
-            barmode='stack',
-            height=400
-        )
-
-        # Exibir o gráfico de Gantt no Streamlit
-        st.plotly_chart(fig, use_container_width=True)
-                
-
+    st.pyplot(gantt.plot_gantt_chart(sa_solution[0]))
