@@ -3,10 +3,16 @@ import matplotlib.pyplot as plt
 def plot_gantt_chart(data):
 
     job_colors = {
-        1: 'red',
-        2: 'green',
-        3: 'blue',
-        4: 'orange'
+        1: '#EF767A',
+        2: '#456990',
+        3: '#49BEAA',
+        4: '#FF8C42',
+        5: '#FFF275',
+        6: '#C97B84',
+        7: '#F9564F',
+        8: '#7CA982',
+        9: '#C44536',
+        10: '#3C4F76'
     }
     # Initialize variables
     job_completion_times = {}
@@ -49,5 +55,7 @@ def plot_gantt_chart(data):
     plt.xlabel('Tempo')
     plt.ylabel('Máquinas')
 
+    plt.plot()
+
     # Exibir o gráfico de Gantt
-    return plt.savefig('gantt_chart.png')
+    return plt.show()
