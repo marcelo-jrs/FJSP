@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as pl
 from utils import parser
 from utils import gantt
 from services import db
