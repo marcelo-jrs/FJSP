@@ -1,6 +1,6 @@
 import random
 
-
+#Checa se cabe na solução
 def checkIfFits(index, individual, opJob, opNb):
     spotOpen = 0
     for i in range(index, len(individual)):
@@ -10,13 +10,13 @@ def checkIfFits(index, individual, opJob, opNb):
         return True
     else:
         return False
-
+#Gera individuo
 def generate_individual(op_total, op_machines, jobs):
     individual = [0] * op_total
     lastIndex = 0
     occupiedIndex = []
     x = 1
- 
+    #Checa cada uma das restrições do problema e do dataset para formar um individuo válido
     for i in range(len(jobs)):
         opJob = len(jobs[i])
         x = 1
@@ -40,55 +40,54 @@ def generate_individual(op_total, op_machines, jobs):
         lastIndex = 0
 
     return individual
-
+#Gera uma população de individuos
 def generate_population(max_population, op_total, op_machines, jobs):
     population = []
 
     for i in range(max_population):
         population.append(generate_individual(op_total, op_machines, jobs))
     return population
-
+#Retorna o fitness de um individuo, o "makespan"
 def fitnes_function(individual):
     # Initialize variables
     job_completion_times = {}
     machine_completion_times = {}
     total_completion_time = 0
 
-    # Iterate over each chromosome in the individual
+    #Passa por cada cromossomo ou gene do individuo
     for chromosome in individual:
         job = chromosome['job']
         machine = chromosome['machine']
         processing_time = chromosome['processingTime']
 
-        # Calculate the start time for the current operation
+        #Calcula o start time para cada operação
         start_time = max(job_completion_times.get(job, 0), machine_completion_times.get(machine, 0))
 
-        # Update the completion time for the current operation
+        #Atualiza o completion time da operação
         completion_time = start_time + processing_time
 
-        # Update the completion times for the job and machine
+        #Atualiza o completion time para o job e a máquina
         job_completion_times[job] = completion_time
         machine_completion_times[machine] = completion_time
 
-        # Update the total completion time
+        #Atualiza o tempo total
         total_completion_time = max(total_completion_time, completion_time)
 
-    # Return the fitness value (inverse of the total completion time)
     fitness = 1 / total_completion_time
     return fitness
 
+#Crossover ou reprodução de 2 individuos
 def order_crossover(parent1, parent2):
-    # Select two random crossover points
+    #Seleciona 2 pontos aleatórios
     point1 = random.randint(0, len(parent1) - 2)
     point2 = random.randint(point1 + 1, len(parent1) - 1)
     
-    # Create an empty child with the same length as the parents
     child = [None] * len(parent1)
     
-    # Copy the selected segment from parent1 to the child
+    #Copia os pontos selecionados de cada pai
     child[point1:point2] = parent1[point1:point2]
     
-    # Fill the remaining positions in the child with the values from parent2
+    #Preenche os pontos restantes
     index = point2
     for value in parent2[point2:] + parent2[:point2]:
         if value not in child:
@@ -96,49 +95,49 @@ def order_crossover(parent1, parent2):
             index = (index + 1) % len(parent1)
     
     return child
-
+#Checa se a criança gerada esta de acordo com cada restrição
 def check_constraints(child):
-    job_operations = {}  # Track the last operation number for each job
+    job_operations = {} #Rastreia cad ajob
     for operation in child:
         job = operation['job']
         op_nb = operation['opNb']
         if job not in job_operations:
-            job_operations[job] = 0  # Initialize last operation number for the job
+            job_operations[job] = 0  #Verifica se as operações estão em ordem
         if op_nb <= job_operations[job]:
-            return False  # Precedence constraint violated
-        job_operations[job] = op_nb  # Update the last operation number for the job
-    return True  # All precedence constraints satisfied
+            return False  #Falso
+        job_operations[job] = op_nb
+    return True  #True
 
 def keyFit():
     return 'fitScore'
-
+#Torneio para selecionar os 2 pais do crossover
 def tournament_selection(population, tournament_size):
     fitness_score = []
 
-    # Randomly select individuals for the tournament
+    #Seleciona individuos aleatoriamente
     tournament = random.sample(population, tournament_size)
 
-    # Calculate fitness for each individual
+    #Calcula o fitness
     for individual in tournament:
         fitness_score.append({'fitScore': fitnes_function(individual), 'individual': individual})
     fitness_sorted = sorted(fitness_score, key=lambda x: x['fitScore'], reverse=True)
     
-    # Select the top two individuals as parents
+    #Seleciona os dois melhores do torneio
     parent1 = fitness_sorted[0].get('individual')
     parent2 = fitness_sorted[1].get('individual')
 
     return parent1, parent2
-
+#Mutação de inversão
 def swap_mutation(individual):
-    # Randomly select two positions in the chromosome
+    #Seleciona 2 posições aleatorias
     pos1 = random.randint(0, len(individual) - 1)
     pos2 = random.randint(0, len(individual) - 1)
     
-    # Swap the values at the selected positions
+    #Troca as posiçoes, gerando um individuo diferente
     individual[pos1], individual[pos2] = individual[pos2], individual[pos1]
     
     return individual
-
+#Mutação de troca, seleciona outras operações do dataset para mutar o individuo
 def replace_mutation(individual, jobs):
     for i in range(len(individual)):
         job = individual[i].get('job')
@@ -156,10 +155,9 @@ def replace(population, child):
 
     #crossover até faltarem 2 na população
     #guarda os 2 melhores da antiga gen e troca os antigos pelos novos
-    #mutation em todos
     fitness_score = []
 
-    #Order the population according to fitness score
+    #Ordena a população pelo fitness
     for individual in population:
         fitness_score.append({'fitScore': fitnes_function(individual), 'individual': individual})
     fitness_sorted = sorted(fitness_score, key=lambda x: x['fitScore'], reverse=True)

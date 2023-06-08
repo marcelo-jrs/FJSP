@@ -3,28 +3,27 @@ import math
 
 
 def swap_solution(solution):
-    # Randomly select two positions in the operation
+    #Similar ao swap mutation do genetic
     pos1 = random.randint(0, len(solution) - 1)
     pos2 = random.randint(0, len(solution) - 1)
 
-    # Swap the values at the selected positions
     solution[pos1], solution[pos2] = solution[pos2], solution[pos1]
     
     return solution
 
 def check_constraints(solution):
-    job_operations = {}  # Track the last operation number for each job
+    job_operations = {}  #Checa as restrições
     for operation in solution:
         job = operation['job']
         op_nb = operation['opNb']
         if job not in job_operations:
-            job_operations[job] = 0  # Initialize last operation number for the job
+            job_operations[job] = 0
         if op_nb <= job_operations[job]:
-            return False  # Precedence constraint violated
-        job_operations[job] = op_nb  # Update the last operation number for the job
-    return True  # All precedence constraints satisfied
+            return False
+        job_operations[job] = op_nb
+    return True
 
-
+#Similar ao replace mutation do genetic
 def replace_solution(solution, jobs):
     for i in range(len(solution)):
         job = solution[i].get('job')
@@ -36,34 +35,30 @@ def replace_solution(solution, jobs):
         solution[i] = newOperation
 
     return solution
-
+#diminui a temperatura pela fórmula
 def decrease_temperature(initalTemp, alpha, iteration):
     temp = initalTemp * (alpha ** iteration)
     return temp
 
+#Similar ao fitnesse function, porém sem inverter o makespan
 def evaluate_makespan(solution):
-    # Initialize variables
+    #Variáveis
     job_completion_times = {}
     machine_completion_times = {}
     total_completion_time = 0
 
-    # Iterate over each operation in the solution 
     for operation in solution:
         job = operation['job']
         machine = operation['machine']
         processing_time = operation['processingTime']
 
-        # Calculate the start time for the current operation
         start_time = max(job_completion_times.get(job, 0), machine_completion_times.get(machine, 0))
 
-        # Update the completion time for the current operation
         completion_time = start_time + processing_time
 
-        # Update the completion times for the job and machine
         job_completion_times[job] = completion_time
         machine_completion_times[machine] = completion_time
 
-        # Update the total completion time
         total_completion_time = max(total_completion_time, completion_time)
 
     makespan = total_completion_time
@@ -73,12 +68,13 @@ def evaluate_makespan(solution):
 def acceptance_probability(curr_cost, new_cost, temperature):
     if new_cost < curr_cost:
         return True  # Aceita solução melhor sem condições
-    else:
+    else:   # Passa pela probabilidade de aceitação
         delta_cost = new_cost - curr_cost
         prob = math.exp(-delta_cost / temperature)
         random_number = random.uniform(0, 1)
         return random_number < prob
 
+#Função de execução do algoritmo
 def simulated_annealing(initial_solution, jobs, initial_temp, alpha, max_iterations):
     current_solution = initial_solution.copy()
     current_cost = evaluate_makespan(current_solution)
