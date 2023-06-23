@@ -9,7 +9,7 @@ import algorithm.simulated_annealing as sa
 
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
-st.set_page_config(page_title='Algoritmo Híbrido', page_icon='dna_icon.png', layout="centered", initial_sidebar_state="auto", menu_items={'About': 'Este é um sistema web que fornece um algoritmo híbrido entre algoritmo genético e simulated annealing, desenvolvido por: Marcelo Júnior, em parceria com o NPI - Núcleo de Prática de Informática da Unifil Londrina'})
+st.set_page_config(page_title='Algoritmo Híbrido', page_icon='dna_icon.png', layout="wide", initial_sidebar_state="auto", menu_items={'About': 'Este é um sistema web que fornece um algoritmo híbrido entre algoritmo genético e simulated annealing, desenvolvido por: Marcelo Júnior, em parceria com o NPI - Núcleo de Prática de Informática da Unifil Londrina'})
 
 st.write("""
 # Funcionamento de um algoritmo híbrido entre Algoritmo genético e Simulated annealing no domínio FJSP
@@ -59,10 +59,10 @@ def execute(parameters, dataset, autor):
     
     id_instance = db.insert_instance(autor, dataset, max_population, max_generation, tournament_size, initial_temp, alpha, max_iterations)
 
-    results_gn = gn.genetic_algorithm(max_generation, max_population, tournament_size, opTotal, opMachines, jobs)
+    results_gn = gn.genetic_algorithm(max_generation, max_population, tournament_size, opTotal, opMachines, jobs, machinesNb)
     solution = results_gn[0]
 
-    results_sa = sa.simulated_annealing(solution, jobs, initial_temp, alpha, max_iterations)
+    results_sa = sa.simulated_annealing(solution, jobs, initial_temp, alpha, max_iterations, machinesNb)
 
     data = results_sa[0]
 
@@ -94,6 +94,7 @@ if clicked:
     if dataset == 'Kacem 4x5': dataset = 1
     if dataset == 'Kacem 10x7': dataset = 2
     results = execute(parameters, dataset, autor)
+    results_gn = results[0]
     sa_solution = results[1]
     sa_score = results[1][1]
 
@@ -101,7 +102,8 @@ if clicked:
         st.subheader('Solução gerada:')
         st.dataframe(sa_solution[0], width=500, height=450)
 
-        st.subheader('Makespan: {x}'.format(x = sa_solution[1]))
+        st.subheader('Makespan GA: {x}'.format(x = sa.evaluate_makespan(results_gn[0])))
+        st.subheader('Makespan SA: {x}'.format(x = sa_solution[1]))
 
         st.subheader('Gráfico de Gantt')
         st.pyplot(gantt.plot_gantt_chart(sa_solution[0]))

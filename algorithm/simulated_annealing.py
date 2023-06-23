@@ -24,17 +24,20 @@ def check_constraints(solution):
     return True
 
 #Similar ao replace mutation do genetic
-def replace_solution(solution, jobs):
+def replace_solution(solution, jobs, machinesNb):
     for i in range(len(solution)):
         job = solution[i].get('job')
         opNb = solution[i].get('opNb')
 
-        indexOp = random.randint(0, len(jobs[job - 1]) - 1)
+        op = jobs[job-1]
+
+        indexOp = random.randint(0, machinesNb - 1)
         newOperation = jobs[job - 1][opNb - 1][indexOp]
 
         solution[i] = newOperation
 
     return solution
+
 #diminui a temperatura pela fórmula
 def decrease_temperature(initalTemp, alpha, iteration):
     temp = initalTemp * (alpha ** iteration)
@@ -75,7 +78,7 @@ def acceptance_probability(curr_cost, new_cost, temperature):
         return random_number < prob
 
 #Função de execução do algoritmo
-def simulated_annealing(initial_solution, jobs, initial_temp, alpha, max_iterations):
+def simulated_annealing(initial_solution, jobs, initial_temp, alpha, max_iterations, machinesNb):
     current_solution = initial_solution.copy()
     current_cost = evaluate_makespan(current_solution)
     current_temp = initial_temp
@@ -83,9 +86,9 @@ def simulated_annealing(initial_solution, jobs, initial_temp, alpha, max_iterati
     for iteration in range(max_iterations):
         new_solution = swap_solution(current_solution.copy())
         if check_constraints(new_solution) == False:
-            new_solution = replace_solution(current_solution.copy(), jobs)
+            new_solution = replace_solution(current_solution.copy(), jobs, machinesNb)
         else:
-            new_solution = replace_solution(new_solution.copy(), jobs)
+            new_solution = replace_solution(new_solution.copy(), jobs, machinesNb)
         new_cost = evaluate_makespan(new_solution)
         
         if acceptance_probability(current_cost, new_cost, current_temp):

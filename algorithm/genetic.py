@@ -138,12 +138,12 @@ def swap_mutation(individual):
     
     return individual
 #Mutação de troca, seleciona outras operações do dataset para mutar o individuo
-def replace_mutation(individual, jobs):
+def replace_mutation(individual, jobs, machinesNb):
     for i in range(len(individual)):
         job = individual[i].get('job')
         opNb = individual[i].get('opNb')
 
-        indexOp = random.randint(0, len(jobs[job - 1]) - 1)
+        indexOp = random.randint(0, machinesNb - 1)
         newOperation = jobs[job - 1][opNb - 1][indexOp]
 
         individual[i] = newOperation
@@ -169,7 +169,7 @@ def replace(population, child):
 
     return population
 
-def genetic_algorithm(max_generation, max_opulation, torunament_size, op_total, op_machines, jobs):
+def genetic_algorithm(max_generation, max_opulation, torunament_size, op_total, op_machines, jobs, machinesNb):
     population = generate_population(max_opulation, op_total, op_machines, jobs)
     currSolution = population[0]
     # Executar o algoritmo genético
@@ -198,7 +198,8 @@ def genetic_algorithm(max_generation, max_opulation, torunament_size, op_total, 
                 counter += 1
 
         # Aplicar mutação
-
+        for individual in population:
+            replace_mutation(individual, jobs, machinesNb)
     # Obter a melhor solução da população final
     best_solution = max(population, key=lambda x: fitnes_function(x))
     best_score = fitnes_function(best_solution)
